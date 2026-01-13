@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Apoteker Anda",
+  "description": "Aplikasi edukasi dan pengingat obat terintegrasi untuk meningkatkan kepatuhan pasien pasca-rawat inap di RSUD Lasinrang.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

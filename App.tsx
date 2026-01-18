@@ -12,7 +12,7 @@ import BottomNav from './components/BottomNav';
 import Header from './components/Header';
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// Audio Decoding Helpers for Gemini Raw PCM
+// Audio Decoding Helpers
 const decodeBase64 = (base64: string) => {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
@@ -54,24 +54,19 @@ const App: React.FC = () => {
   });
   const [activeAlarm, setActiveAlarm] = useState<{ med: Medication, time: string } | null>(null);
 
-  // Load data from local storage
   useEffect(() => {
     const savedMeds = localStorage.getItem('apoteker_meds');
     if (savedMeds) setMeds(JSON.parse(savedMeds));
-    
     const savedLogs = localStorage.getItem('apoteker_logs');
     if (savedLogs) setLogs(JSON.parse(savedLogs));
-
     const savedPatient = localStorage.getItem('apoteker_patient');
     if (savedPatient) setPatient(JSON.parse(savedPatient));
 
-    // Request Notification permission
     if (Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);
 
-  // Save data to local storage
   useEffect(() => localStorage.setItem('apoteker_meds', JSON.stringify(meds)), [meds]);
   useEffect(() => localStorage.setItem('apoteker_logs', JSON.stringify(logs)), [logs]);
   useEffect(() => localStorage.setItem('apoteker_patient', JSON.stringify(patient)), [patient]);
@@ -98,37 +93,17 @@ const App: React.FC = () => {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
         const bytes = decodeBase64(base64Audio);
         const audioBuffer = await decodeRawPcm(bytes, audioContext, 24000, 1);
-        
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContext.destination);
-        
-        // Ensure audio context is running (browser policy)
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-        }
-        
+        if (audioContext.state === 'suspended') await audioContext.resume();
         source.start();
       }
     } catch (e) {
       console.error("TTS failed", e);
-      // Fallback simple beep if AI fails
-      try {
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 1);
-      } catch (err) {
-        console.error("Beep fallback failed", err);
-      }
     }
   };
 
-  // Alarm checking logic
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
@@ -147,30 +122,20 @@ const App: React.FC = () => {
               const alreadyTaken = logs.find(l => l.date === today && l.medId === med.id && l.timeSlot === time && l.taken);
 
               if (!alreadyNotified && !alreadyTaken) {
-                // Trigger Alarm
                 setActiveAlarm({ med, time });
-                
-                // System notification
                 if (Notification.permission === "granted") {
-                  new Notification(`Waktunya Minum Obat: ${med.name}`, {
+                  new Notification(`Waktunya Obat: ${med.name}`, {
                     body: `Jadwal: ${time}. Klik untuk detail.`,
-                    icon: 'https://cdn-icons-png.flaticon.com/512/822/822115.png'
                   });
                 }
-
-                // Play Voice
-                if (med.alarmSound !== 'device') {
-                  playTTS(med.alarmSound as 'male' | 'female');
-                }
-
+                if (med.alarmSound !== 'device') playTTS(med.alarmSound as 'male' | 'female');
                 setLogs(prev => [...prev, { date: today, medId: med.id, timeSlot: time, taken: false, notifiedAt: Date.now() }]);
               }
             }
           });
         }
       });
-    }, 15000); // Check every 15s
-
+    }, 15000);
     return () => clearInterval(interval);
   }, [meds, logs]);
 
@@ -205,15 +170,16 @@ const App: React.FC = () => {
   };
 
   const renderPage = () => {
+    const pageClass = "page-transition px-4 py-4 pt-20";
     switch (currentPage) {
-      case 'home': return <Home meds={meds} logs={logs} onToggleAdherence={toggleAdherence} />;
-      case 'meds': return <MedicationList meds={meds} onAdd={addMedication} onDelete={deleteMedication} />;
-      case 'track': return <Tracker meds={meds} logs={logs} />;
-      case 'edu': return <Education />;
-      case 'settings': return <Settings onNavigate={setCurrentPage} patient={patient} />;
-      case 'ai-chat': return <AIChat meds={meds} />;
-      case 'profile': return <Profile patient={patient} onUpdate={setPatient} onBack={() => setCurrentPage('settings')} />;
-      default: return <Home meds={meds} logs={logs} onToggleAdherence={toggleAdherence} />;
+      case 'home': return <div className={pageClass}><Home meds={meds} logs={logs} onToggleAdherence={toggleAdherence} /></div>;
+      case 'meds': return <div className={pageClass}><MedicationList meds={meds} onAdd={addMedication} onDelete={deleteMedication} /></div>;
+      case 'track': return <div className={pageClass}><Tracker meds={meds} logs={logs} /></div>;
+      case 'edu': return <div className={pageClass}><Education /></div>;
+      case 'settings': return <div className={pageClass}><Settings onNavigate={setCurrentPage} patient={patient} /></div>;
+      case 'ai-chat': return <div className={pageClass}><AIChat meds={meds} /></div>;
+      case 'profile': return <div className={pageClass}><Profile patient={patient} onUpdate={setPatient} onBack={() => setCurrentPage('settings')} /></div>;
+      default: return <div className={pageClass}><Home meds={meds} logs={logs} onToggleAdherence={toggleAdherence} /></div>;
     }
   };
 
@@ -221,13 +187,12 @@ const App: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-sky-50 text-slate-800 pb-20 max-w-md mx-auto shadow-2xl relative overflow-hidden">
       <Header onChatClick={() => setCurrentPage('ai-chat')} activePage={currentPage} />
       
-      <main className="flex-1 overflow-y-auto px-4 py-4 pt-20">
+      <main className="flex-1 overflow-y-auto">
         {renderPage()}
       </main>
 
       <BottomNav activePage={currentPage} onPageChange={setCurrentPage} />
 
-      {/* Alarm Modal */}
       {activeAlarm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full rounded-[40px] p-8 text-center shadow-2xl border-4 border-sky-100 animate-in zoom-in slide-in-from-bottom-10 duration-500">
@@ -236,26 +201,24 @@ const App: React.FC = () => {
             </div>
             <h2 className="text-2xl font-black text-slate-900 mb-2">Waktunya Minum Obat!</h2>
             <p className="text-sky-600 font-bold text-lg mb-6">{activeAlarm.med.name} - {activeAlarm.time}</p>
-            
             <div className="grid gap-4">
               <button 
                 onClick={() => toggleAdherence({ date: new Date().toISOString().split('T')[0], medId: activeAlarm.med.id, timeSlot: activeAlarm.time, taken: true })}
-                className="w-full bg-emerald-500 text-white font-black py-5 rounded-3xl shadow-lg shadow-emerald-200 text-lg hover:scale-[1.02] active:scale-95 transition-all"
+                className="w-full bg-emerald-500 text-white font-black py-5 rounded-3xl shadow-lg shadow-emerald-200 text-lg active:scale-95 transition-all"
               >
                 <i className="fa-solid fa-check mr-2"></i> Sudah Diminum
               </button>
               <button 
                 onClick={() => setActiveAlarm(null)}
-                className="w-full bg-amber-500 text-white font-black py-5 rounded-3xl shadow-lg shadow-amber-200 text-lg hover:scale-[1.02] active:scale-95 transition-all"
+                className="w-full bg-amber-500 text-white font-black py-5 rounded-3xl shadow-lg shadow-amber-200 text-lg active:scale-95 transition-all"
               >
-                <i className="fa-solid fa-clock mr-2"></i> Ingatkan Saya (10 mnt)
+                <i className="fa-solid fa-clock mr-2"></i> Nanti Saja
               </button>
             </div>
           </div>
         </div>
       )}
       
-      {/* Decorative gradient blob */}
       <div className="fixed -top-24 -right-24 w-64 h-64 bg-cyan-200/40 rounded-full blur-3xl pointer-events-none z-0"></div>
       <div className="fixed -bottom-24 -left-24 w-64 h-64 bg-emerald-200/40 rounded-full blur-3xl pointer-events-none z-0"></div>
     </div>

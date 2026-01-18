@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Page, PatientInfo } from '../types';
 
 interface SettingsProps {
@@ -9,6 +9,14 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ onNavigate, patient }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    // Check if the app is already installed/running in standalone mode
+    if ((window.navigator as any).standalone || window.matchMedia('(display-mode: standalone)').matches) {
+      setIsStandalone(true);
+    }
+  }, []);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -65,13 +73,27 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate, patient }) => {
       { id: 'profile', icon: 'fa-user', label: 'Profil Saya', color: 'text-sky-500', action: () => onNavigate('profile') },
       { id: 'hospital', icon: 'fa-hospital', label: 'Data RSUD Lasinrang', color: 'text-emerald-500' },
     ]},
+    { title: 'PENGATURAN APLIKASI', items: [
+      { 
+        id: 'install', 
+        icon: 'fa-mobile-screen-button', 
+        label: isStandalone ? 'Aplikasi Sudah Terinstal' : 'Gunakan Sebagai Aplikasi HP', 
+        color: 'text-orange-500',
+        sublabel: isStandalone ? 'Berjalan dalam mode standalone' : 'Klik untuk lihat panduan instalasi',
+        action: () => {
+          if (isStandalone) {
+             alert("Aplikasi Anda sudah terinstal di layar utama HP.");
+          } else {
+             alert("Cara Install ke HP:\n\n1. Tekan ikon 'Berbagi' (ikon kotak panah atas di iPhone) atau 'Titik Tiga' (di Android).\n2. Pilih 'Tambah ke Layar Utama' / 'Add to Home Screen'.\n3. Aplikasi akan muncul di daftar aplikasi HP Anda!");
+          }
+        }
+      },
+    ]},
     { title: 'DATA & PENYIMPANAN', items: [
       { id: 'export', icon: 'fa-file-export', label: 'Cadangkan Data (Export)', color: 'text-blue-500', action: exportData },
       { id: 'import', icon: 'fa-file-import', label: 'Pulihkan Data (Import)', color: 'text-purple-500', action: () => fileInputRef.current?.click() },
-      { id: 'status', icon: 'fa-database', label: 'Status: Penyimpanan Lokal', color: 'text-slate-400', sublabel: 'Data hanya tersimpan di HP ini' },
     ]},
     { title: 'LAINNYA', items: [
-      { id: 'rate', icon: 'fa-star', label: 'Beri Rating Aplikasi', color: 'text-yellow-500', action: () => alert("Terima kasih!") },
       { id: 'share', icon: 'fa-share-nodes', label: 'Bagikan Aplikasi', color: 'text-pink-500', action: handleShare },
     ]}
   ];
@@ -79,7 +101,7 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate, patient }) => {
   const profileImage = patient.profilePic || `https://api.dicebear.com/7.x/avataaars/svg?seed=${patient.name || 'user'}`;
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 pb-10 page-transition">
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -124,7 +146,7 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate, patient }) => {
                       <i className={`fa-solid ${item.icon} text-lg`}></i>
                     </div>
                     <div>
-                        <span className="font-bold text-slate-700 block">{item.label}</span>
+                        <span className="font-bold text-slate-700 block text-sm">{item.label}</span>
                         {item.sublabel && <span className="text-[9px] text-slate-400 font-bold uppercase">{item.sublabel}</span>}
                     </div>
                   </div>
@@ -138,7 +160,7 @@ const Settings: React.FC<SettingsProps> = ({ onNavigate, patient }) => {
 
       <div className="pt-10 pb-4 px-2">
         <p className="text-[10px] text-center text-slate-300 mt-8 uppercase tracking-[0.4em] font-black">
-          Versi 1.0.1 PROTOTYPE • 2025 RSUD Lasinrang
+          Versi 1.1.0 (PWA ENABLED) • 2025 RSUD Lasinrang
         </p>
       </div>
     </div>

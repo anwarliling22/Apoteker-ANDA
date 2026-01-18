@@ -1,6 +1,7 @@
 {
-  "name": "Copy of Apoteker Anda",
-  "description": "Aplikasi edukasi dan pengingat obat terintegrasi untuk meningkatkan kepatuhan pasien pasca-rawat inap di RSUD Lasinrang.",
+  "name": "Apoteker Anda",
+  "short_name": "ApotekerAnda",
+  "description": "Asisten Pengingat Obat & Edukasi Farmasi RSUD Lasinrang Pinrang.",
   "requestFramePermissions": [
     "camera",
     "microphone"
